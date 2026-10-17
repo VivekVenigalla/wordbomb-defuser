@@ -1,83 +1,153 @@
 // Tests for src/overlay.js. Run them with:  npm test
-// (Only makeOverlayText is tested here: initOverlay and showOverlay draw on a real web page,
-// which Node does not have.)
+// Only the "thinking" parts are tested here (makeOverlayModel and friends). The drawing part
+// (initOverlay, showOverlay) needs a real web page, which Node does not have.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const {
-  makeOverlayText,
+  makeOverlayModel,
+  splitWord,
+  describeCount,
   cleanMinLength,
   isToggleShortcut,
   SMALLEST_MIN_LENGTH,
   LARGEST_MIN_LENGTH,
 } = require('../src/overlay.js');
 
-test('with no prompt it says it is waiting for a game', () => {
-  const text = makeOverlayText({ prompt: '', count: 0, myTurn: null, words: [] });
-  assert.equal(text, 'Word Bomb Defuser\nWaiting for a game...');
+// A model for a normal "it is your turn" situation, with anything we want to change.
+function yourTurn(changes) {
+  return makeOverlayModel({ prompt: 'thi', count: 2525, myTurn: true, words: ['thin', 'this'], ...changes });
+}
+
+// ---- the waiting state -----------------------------------------------------------------------
+
+test('with no prompt the model is in the "waiting" state with nothing else to show', () => {
+  const model = makeOverlayModel({ prompt: '', count: 0, myTurn: null, words: [], neededLetters: 'abc' });
+  assert.equal(model.state, 'waiting');
+  assert.equal(model.statusLabel, 'Waiting for a game');
+  assert.equal(model.prompt, '');
+  assert.equal(model.countText, '');
+  assert.equal(model.lettersLeft, ''); // not shown before a game
+  assert.deepEqual(model.words, []);
+  assert.equal(model.emptyNote, '');
 });
 
-test('on our turn it shows the prompt in capitals and a numbered list', () => {
-  const text = makeOverlayText({ prompt: 'thi', count: 2525, myTurn: true, words: ['thin', 'this'] });
-  assert.equal(
-    text,
-    ['Word Bomb Defuser', 'Prompt: THI (2525 words)', 'Your turn', '1. thin', '2. this'].join('\n')
-  );
+// ---- the prompt and the count ----------------------------------------------------------------
+
+test('the prompt is shown in capitals with the game\'s word count', () => {
+  const model = yourTurn();
+  assert.equal(model.prompt, 'THI');
+  assert.equal(model.countText, '2525 words');
 });
 
-test('when it is not our turn it shows no words', () => {
-  const text = makeOverlayText({ prompt: 'thi', count: 10, myTurn: false, words: ['thin'] });
-  assert.ok(text.includes('Not your turn'));
-  assert.ok(!text.includes('thin'));
-  assert.ok(!text.includes('1.'));
+test('describeCount: "1 word" (not "1 words"), "2 words", and nothing when there is no count', () => {
+  assert.equal(describeCount(1), '1 word');
+  assert.equal(describeCount(2), '2 words');
+  assert.equal(describeCount(2525), '2525 words');
+  assert.equal(describeCount(0), '');
+  assert.equal(describeCount(-3), '');
 });
 
-test('when we cannot tell whose turn it is, it still shows words and says so', () => {
-  const text = makeOverlayText({ prompt: 'qu', count: 5, myTurn: null, words: ['quit'] });
-  assert.ok(text.includes('Turn unknown'));
-  assert.ok(text.includes('1. quit'));
+// ---- whose turn ------------------------------------------------------------------------------
+
+test('our turn: state "yours", with suggestions', () => {
+  const model = yourTurn();
+  assert.equal(model.state, 'yours');
+  assert.equal(model.statusLabel, 'Your turn');
+  assert.equal(model.words.length, 2);
 });
 
-test('on our turn with nothing found it says so', () => {
-  const text = makeOverlayText({ prompt: 'zzq', count: 0, myTurn: true, words: [] });
-  assert.ok(text.includes('No words found'));
-  assert.ok(!text.includes('1.'));
+test('not our turn: state "theirs", and no suggestions at all', () => {
+  const model = yourTurn({ myTurn: false });
+  assert.equal(model.state, 'theirs');
+  assert.equal(model.statusLabel, 'Not your turn');
+  assert.deepEqual(model.words, []);
+  assert.equal(model.emptyNote, ''); // an empty list is expected here, so no "No words found"
+  assert.equal(model.prompt, 'THI'); // but the prompt is still shown
 });
 
-test('the numbers go up by one for each word', () => {
-  const text = makeOverlayText({ prompt: 'a', count: 1, myTurn: true, words: ['a1', 'b2', 'c3', 'd4', 'e5'] });
-  assert.ok(text.includes('1. a1') && text.includes('3. c3') && text.includes('5. e5'));
+test('turn unknown: still shows the suggestions, and says it does not know', () => {
+  const model = yourTurn({ myTurn: null });
+  assert.equal(model.state, 'unknown');
+  assert.equal(model.statusLabel, 'Turn unknown');
+  assert.equal(model.words.length, 2);
 });
 
-test('when nothing is found and the slider is raised, it hints at the slider', () => {
-  const text = makeOverlayText({ prompt: 'thi', count: 9, myTurn: true, words: [], minLength: 12 });
-  assert.ok(text.includes('No words found'));
-  assert.ok(text.includes('try a smaller minimum length'));
+// ---- the suggested words ---------------------------------------------------------------------
+
+test('splitWord: cuts a word around the prompt so the prompt can be coloured', () => {
+  assert.deepEqual(splitWord('anything', 'thi'), { before: 'any', match: 'thi', after: 'ng' });
+  assert.deepEqual(splitWord('this', 'thi'), { before: '', match: 'thi', after: 's' });
+  assert.deepEqual(splitWord('nothing', 'thing'), { before: 'no', match: 'thing', after: '' });
 });
 
-test('no slider hint when the slider is at its smallest, or when words were found', () => {
-  const none = makeOverlayText({ prompt: 'zzq', count: 0, myTurn: true, words: [], minLength: 2 });
-  assert.ok(!none.includes('try a smaller'));
-  const some = makeOverlayText({ prompt: 'thi', count: 9, myTurn: true, words: ['thing'], minLength: 12 });
-  assert.ok(!some.includes('try a smaller'));
-  const unknown = makeOverlayText({ prompt: 'zzq', count: 0, myTurn: true, words: [] });
-  assert.ok(!unknown.includes('try a smaller'));
+test('splitWord: capital letters in the prompt are fine', () => {
+  assert.deepEqual(splitWord('anything', 'THI'), { before: 'any', match: 'thi', after: 'ng' });
 });
 
-test('the slider range makes sense', () => {
-  assert.ok(SMALLEST_MIN_LENGTH >= 2);
-  assert.ok(LARGEST_MIN_LENGTH > SMALLEST_MIN_LENGTH);
+test('splitWord: if the prompt is somehow not in the word, the whole word is just shown plainly', () => {
+  assert.deepEqual(splitWord('cat', 'xyz'), { before: 'cat', match: '', after: '' });
 });
 
-test('the word count says "1 word" (not "1 words") and "2 words"', () => {
-  assert.ok(makeOverlayText({ prompt: 'zq', count: 1, myTurn: true, words: [] }).includes('Prompt: ZQ (1 word)'));
-  assert.ok(makeOverlayText({ prompt: 'zq', count: 2, myTurn: true, words: [] }).includes('Prompt: ZQ (2 words)'));
+test('splitWord: the three parts always add up to the original word', () => {
+  for (const word of ['thing', 'anything', 'thi', 'ething']) {
+    const { before, match, after } = splitWord(word, 'thi');
+    assert.equal(before + match + after, word);
+  }
 });
 
-test('when the game gave no count (0) the prompt line has no count at all', () => {
-  const text = makeOverlayText({ prompt: 'thi', count: 0, myTurn: true, words: ['thin'] });
-  assert.ok(text.includes('Prompt: THI\n'));
-  assert.ok(!text.includes('0 words'));
+test('the model keeps the words in the order given', () => {
+  const model = yourTurn({ words: ['thin', 'this', 'thing'] });
+  assert.deepEqual(model.words.map((w) => w.before + w.match + w.after), ['thin', 'this', 'thing']);
 });
+
+// ---- the letters still needed ----------------------------------------------------------------
+
+test('letters left are shown in capitals', () => {
+  assert.equal(yourTurn({ neededLetters: 'qxz' }).lettersLeft, 'QXZ');
+});
+
+test('letters left are also shown when it is not our turn', () => {
+  assert.equal(yourTurn({ myTurn: false, neededLetters: 'qxz' }).lettersLeft, 'QXZ');
+});
+
+test('no letters left (or not known): an empty string', () => {
+  assert.equal(yourTurn({ neededLetters: '' }).lettersLeft, '');
+  assert.equal(yourTurn().lettersLeft, '');
+});
+
+test('each word lists the needed letters it fills, in capitals', () => {
+  const model = yourTurn({ words: ['anything', 'thinking', 'this'], neededLetters: 'gkwy' });
+  assert.deepEqual(model.words.map((w) => w.filled), ['GY', 'GK', '']);
+});
+
+test('no letters filled when none are needed or none are known', () => {
+  assert.ok(yourTurn({ neededLetters: '' }).words.every((w) => w.filled === ''));
+  assert.ok(yourTurn().words.every((w) => w.filled === ''));
+});
+
+// ---- when there is nothing to suggest --------------------------------------------------------
+
+test('our turn with no words: a "No words found" note', () => {
+  const model = yourTurn({ words: [] });
+  assert.equal(model.emptyNote, 'No words found.');
+});
+
+test('no words and the slider raised: the note suggests lowering it', () => {
+  const model = yourTurn({ words: [], minLength: 12 });
+  assert.ok(model.emptyNote.includes('No words found.'));
+  assert.ok(model.emptyNote.includes('Try a smaller minimum length.'));
+});
+
+test('no slider hint when the slider is at its smallest, or its value is unknown', () => {
+  assert.ok(!yourTurn({ words: [], minLength: SMALLEST_MIN_LENGTH }).emptyNote.includes('smaller'));
+  assert.ok(!yourTurn({ words: [] }).emptyNote.includes('smaller'));
+});
+
+test('no note when there are words', () => {
+  assert.equal(yourTurn({ minLength: 12 }).emptyNote, '');
+});
+
+// ---- the saved slider value ------------------------------------------------------------------
 
 test('cleanMinLength: a valid saved value is kept', () => {
   assert.equal(cleanMinLength(2), 2);
@@ -103,39 +173,12 @@ test('cleanMinLength: out-of-range whole numbers are moved to the nearest allowe
   assert.equal(cleanMinLength(99), LARGEST_MIN_LENGTH);
 });
 
-test('the letters still needed are shown in capitals under the prompt', () => {
-  const text = makeOverlayText({ prompt: 'thi', count: 5, myTurn: true, words: ['thin'], neededLetters: 'qxz' });
-  const lines = text.split('\n');
-  assert.equal(lines[1], 'Prompt: THI (5 words)');
-  assert.equal(lines[2], 'Letters left: QXZ');
+test('the slider range makes sense', () => {
+  assert.ok(SMALLEST_MIN_LENGTH >= 2);
+  assert.ok(LARGEST_MIN_LENGTH > SMALLEST_MIN_LENGTH);
 });
 
-test('the letters line is also shown when it is not our turn', () => {
-  const text = makeOverlayText({ prompt: 'thi', count: 5, myTurn: false, words: [], neededLetters: 'qxz' });
-  assert.ok(text.includes('Letters left: QXZ'));
-});
-
-test('no letters line when none are known or none are left', () => {
-  assert.ok(!makeOverlayText({ prompt: 'thi', count: 5, myTurn: true, words: [], neededLetters: '' }).includes('Letters left'));
-  assert.ok(!makeOverlayText({ prompt: 'thi', count: 5, myTurn: true, words: [] }).includes('Letters left'));
-});
-
-test('each word shows which needed letters it fills, in capitals and brackets', () => {
-  const text = makeOverlayText({
-    prompt: 'thi', count: 5, myTurn: true, words: ['anything', 'thinking', 'this'], neededLetters: 'gkwy',
-  });
-  assert.ok(text.includes('1. anything [GY]'));
-  assert.ok(text.includes('2. thinking [GK]'));
-  assert.ok(text.includes('3. this\n') || text.endsWith('3. this')); // fills nothing: no brackets
-  assert.ok(!text.includes('3. this ['));
-});
-
-test('no brackets at all when no letters are needed or none are known', () => {
-  const a = makeOverlayText({ prompt: 'thi', count: 5, myTurn: true, words: ['thing'], neededLetters: '' });
-  const b = makeOverlayText({ prompt: 'thi', count: 5, myTurn: true, words: ['thing'] });
-  assert.ok(a.includes('1. thing') && !a.includes('['));
-  assert.ok(b.includes('1. thing') && !b.includes('['));
-});
+// ---- the Alt+B shortcut ----------------------------------------------------------------------
 
 test('isToggleShortcut: Alt+B is the shortcut', () => {
   assert.equal(isToggleShortcut({ altKey: true, code: 'KeyB' }), true);

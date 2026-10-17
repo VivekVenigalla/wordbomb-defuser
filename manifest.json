@@ -40,6 +40,7 @@
         "src/tiers.js",
         "src/rank-words.js",
         "src/suggest.js",
+        "src/overlay-style.js",
         "src/overlay.js",
         "src/enabled.js",
         "src/content.js"

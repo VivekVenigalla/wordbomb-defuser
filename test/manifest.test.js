@@ -51,6 +51,7 @@ test('scripts are listed after the scripts they depend on', () => {
     ['src/suggest.js', 'src/find-words.js'],
     ['src/suggest.js', 'src/rank-words.js'],
     ['src/overlay.js', 'src/rank-words.js'],
+    ['src/overlay.js', 'src/overlay-style.js'],
     ['src/content.js', 'src/enabled.js'],
     ['src/content.js', 'src/overlay.js'],
     ['src/content.js', 'src/suggest.js'],

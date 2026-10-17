@@ -20,7 +20,7 @@ function updateVisibility() {
 function refresh() {
   if (!enabled) return; // switched off: do no work (we still keep track of the game, see below)
   showOverlay(
-    makeOverlayText({
+    makeOverlayModel({
       prompt: state.prompt,
       count: state.count,
       myTurn: isMyTurn(state),

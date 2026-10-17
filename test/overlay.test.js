@@ -3,7 +3,12 @@
 // which Node does not have.)
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { makeOverlayText, SMALLEST_MIN_LENGTH, LARGEST_MIN_LENGTH } = require('../src/overlay.js');
+const {
+  makeOverlayText,
+  cleanMinLength,
+  SMALLEST_MIN_LENGTH,
+  LARGEST_MIN_LENGTH,
+} = require('../src/overlay.js');
 
 test('with no prompt it says it is waiting for a game', () => {
   const text = makeOverlayText({ prompt: '', count: 0, myTurn: null, words: [] });
@@ -71,4 +76,28 @@ test('when the game gave no count (0) the prompt line has no count at all', () =
   const text = makeOverlayText({ prompt: 'thi', count: 0, myTurn: true, words: ['thin'] });
   assert.ok(text.includes('Prompt: THI\n'));
   assert.ok(!text.includes('0 words'));
+});
+
+test('cleanMinLength: a valid saved value is kept', () => {
+  assert.equal(cleanMinLength(2), 2);
+  assert.equal(cleanMinLength(8), 8);
+  assert.equal(cleanMinLength(15), 15);
+});
+
+test('cleanMinLength: nothing saved yet (undefined) gives the smallest value', () => {
+  assert.equal(cleanMinLength(undefined), SMALLEST_MIN_LENGTH);
+  assert.equal(cleanMinLength(null), SMALLEST_MIN_LENGTH);
+});
+
+test('cleanMinLength: things that are not whole numbers give the smallest value', () => {
+  assert.equal(cleanMinLength('8'), SMALLEST_MIN_LENGTH);
+  assert.equal(cleanMinLength(7.5), SMALLEST_MIN_LENGTH);
+  assert.equal(cleanMinLength(NaN), SMALLEST_MIN_LENGTH);
+  assert.equal(cleanMinLength({}), SMALLEST_MIN_LENGTH);
+});
+
+test('cleanMinLength: out-of-range whole numbers are moved to the nearest allowed value', () => {
+  assert.equal(cleanMinLength(0), SMALLEST_MIN_LENGTH);
+  assert.equal(cleanMinLength(-5), SMALLEST_MIN_LENGTH);
+  assert.equal(cleanMinLength(99), LARGEST_MIN_LENGTH);
 });

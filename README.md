@@ -41,7 +41,7 @@ listens to the game's network connection.
 | `src/tiers.js` | `loadTiers`, `getTier`: how common a word is (from `tiers.txt`), 0 = everyday ... 8 = very rare. |
 | `src/rank-words.js` | `rankWords`: scores words (rarer words and too-long words lose points) and keeps the best few. |
 | `src/suggest.js` | `getSuggestions`: decides which words to show right now. |
-| `src/overlay.js` | `makeOverlayText` (the text to show), `initOverlay` and `showOverlay` (drawing it, with the slider). |
+| `src/overlay.js` | `makeOverlayText` (the text to show), `cleanMinLength` (checks the saved slider value), `initOverlay` and `showOverlay` (drawing it, with the slider). |
 | `src/content.js` | Connects the pieces above. |
 | `scripts/build-words.js` | Builds `words.txt` (from the `word-list` package) and `tiers.txt` (from `wordlist-english`). |
 | `helpers/bytes.js` | Small helpers shared by the tests. |
@@ -54,7 +54,6 @@ must come after the files it uses.
 
 - Words missing from `tiers.txt` count as the rarest kind. At very long minimum lengths the
   suggestions can still be unusual words, because few common words are that long.
-- The slider forgets its value when the page reloads.
 - It does not yet use the game's alphabet-bonus letters.
 - The player-id assumption (it is in the connection address) is unverified; if the box says
   "Turn unknown", that is why.

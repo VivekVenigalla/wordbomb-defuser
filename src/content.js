@@ -7,7 +7,7 @@ console.log('[defuser] content script is running on', location.href);
 const state = createGameState();
 let wordList = []; // filled in once words.txt has been loaded (below)
 let tiers = new Map(); // how common each word is; filled in once tiers.txt has been loaded
-let minLength = SMALLEST_MIN_LENGTH; // set by the slider; starts at the smallest value, meaning "no limit"
+let minLength = SMALLEST_MIN_LENGTH; // set by the slider; the smallest value means "no limit"
 
 // Work out the suggestions for the current prompt and draw the box.
 function refresh() {
@@ -22,14 +22,24 @@ function refresh() {
   );
 }
 
-// Draw the box with its slider. Moving the slider changes minLength and redraws the suggestions.
-initOverlay({
-  minLength: minLength,
-  onMinLengthChange: function (newValue) {
-    minLength = newValue;
+// Draw the box with its slider. First we ask the browser's storage for the value the slider
+// had last time. (`browser.storage.local` is a small private notebook that belongs to the
+// extension and survives reloads and restarts.) If that fails, we just start from the default.
+browser.storage.local
+  .get('minLength')
+  .catch(() => ({}))
+  .then((saved) => {
+    minLength = cleanMinLength(saved.minLength);
+    initOverlay({
+      minLength: minLength,
+      onMinLengthChange: function (newValue) {
+        minLength = newValue;
+        browser.storage.local.set({ minLength: newValue }).catch(() => {}); // remember it for next time
+        refresh();
+      },
+    });
     refresh();
-  },
-});
+  });
 
 // Load the two data files. `fetch` downloads a file; here the files are part of the extension itself.
 // Promise.all means "do both downloads, and continue when both are finished".

@@ -2,6 +2,7 @@
 // and a slider for the minimum word length.
 //
 //   makeOverlayText(info)   builds the text to show. (Pure: no browser needed, so it is tested.)
+//   cleanMinLength(value)   turns a saved slider value into a safe one (see below).
 //   initOverlay(options)    creates the box and the slider on the page. Call it once.
 //   showOverlay(text)       changes the text inside the box.
 //
@@ -14,6 +15,15 @@
 
 const SMALLEST_MIN_LENGTH = 2; // a prompt has at least 2 letters, so a shorter minimum means nothing
 const LARGEST_MIN_LENGTH = 15;
+
+// The slider's value is saved between visits. Whatever comes back from storage might be missing
+// or wrong (an old version, a typo, something else wrote to it), so we check it before using it.
+// Anything that is not a whole number becomes the smallest value; a whole number that is too
+// small or too large is moved to the nearest allowed value.
+function cleanMinLength(value) {
+  if (!Number.isInteger(value)) return SMALLEST_MIN_LENGTH;
+  return Math.min(LARGEST_MIN_LENGTH, Math.max(SMALLEST_MIN_LENGTH, value));
+}
 
 // "1 word", "2 words". If the count is 0 we have no real number, so we say nothing about it.
 function describeCount(count) {
@@ -113,5 +123,12 @@ function showOverlay(text) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { makeOverlayText, initOverlay, showOverlay, SMALLEST_MIN_LENGTH, LARGEST_MIN_LENGTH };
+  module.exports = {
+    makeOverlayText,
+    cleanMinLength,
+    initOverlay,
+    showOverlay,
+    SMALLEST_MIN_LENGTH,
+    LARGEST_MIN_LENGTH,
+  };
 }

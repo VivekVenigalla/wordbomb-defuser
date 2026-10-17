@@ -56,5 +56,8 @@
         "https://wordbomb.io/*"
       ]
     }
+  ],
+  "permissions": [
+    "storage"
   ]
 }

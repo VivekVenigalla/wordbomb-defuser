@@ -7,6 +7,7 @@ console.log('[defuser] content script is running on', location.href);
 const state = createGameState();
 let wordList = []; // filled in once words.txt has been loaded (below)
 let tiers = new Map(); // how common each word is; filled in once tiers.txt has been loaded
+let hidden = false; // true while the box is hidden with Alt+B
 let minLength = SMALLEST_MIN_LENGTH; // set by the slider; the smallest value means "no limit"
 
 // Work out the suggestions for the current prompt and draw the box.
@@ -23,14 +24,30 @@ function refresh() {
   );
 }
 
-// Draw the box with its slider. First we ask the browser's storage for the value the slider
-// had last time. (`browser.storage.local` is a small private notebook that belongs to the
-// extension and survives reloads and restarts.) If that fails, we just start from the default.
+// Alt+B hides or shows the box. We listen on the whole page. The `true` at the end means
+// "look at key presses before the page does", so the shortcut works wherever focus is.
+document.addEventListener(
+  'keydown',
+  function (keyEvent) {
+    if (!isToggleShortcut(keyEvent)) return;
+    keyEvent.preventDefault(); // stop Alt+B from typing a symbol somewhere
+    hidden = !hidden;
+    browser.storage.local.set({ hidden: hidden }).catch(() => {}); // remember it for next time
+    setOverlayVisible(!hidden);
+  },
+  true
+);
+
+// Draw the box with its slider. First we ask the browser's storage for the values saved last
+// time: the slider's position, and whether the box was hidden. (`browser.storage.local` is a
+// small private notebook that belongs to the extension and survives reloads and restarts.)
+// If that fails, we just start from the defaults.
 browser.storage.local
-  .get('minLength')
+  .get(['minLength', 'hidden'])
   .catch(() => ({}))
   .then((saved) => {
     minLength = cleanMinLength(saved.minLength);
+    hidden = saved.hidden === true; // anything other than a real "true" means: show the box
     initOverlay({
       minLength: minLength,
       onMinLengthChange: function (newValue) {
@@ -39,6 +56,7 @@ browser.storage.local
         refresh();
       },
     });
+    setOverlayVisible(!hidden);
     refresh();
   });
 

@@ -3,6 +3,8 @@
 //
 //   makeOverlayText(info)   builds the text to show. (Pure: no browser needed, so it is tested.)
 //   cleanMinLength(value)   turns a saved slider value into a safe one (see below).
+//   isToggleShortcut(event) says whether a key press is the "hide/show the box" shortcut (Alt+B).
+//   setOverlayVisible(yes)  hides or shows the whole box.
 //   initOverlay(options)    creates the box and the slider on the page. Call it once.
 //   showOverlay(text)       changes the text inside the box.
 //
@@ -30,6 +32,19 @@ const LARGEST_MIN_LENGTH = 15;
 function cleanMinLength(value) {
   if (!Number.isInteger(value)) return SMALLEST_MIN_LENGTH;
   return Math.min(LARGEST_MIN_LENGTH, Math.max(SMALLEST_MIN_LENGTH, value));
+}
+
+// Is this key press the shortcut that hides or shows the box? It is Alt+B, with no other
+// modifier keys held. We look at `code` (which physical key was pressed) rather than the letter
+// it types, because Alt+B types a different symbol on a Mac keyboard.
+function isToggleShortcut(event) {
+  return (
+    event.altKey === true &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey &&
+    event.code === 'KeyB'
+  );
 }
 
 // "1 word", "2 words". If the count is 0 we have no real number, so we say nothing about it.
@@ -125,11 +140,22 @@ function initOverlay(options) {
     slider.blur();
   });
 
+  const hint = document.createElement('div');
+  hint.style.cssText = 'font-size: 11px; margin-top: 4px';
+  hint.textContent = 'Alt+B: hide / show';
+
   sliderRow.appendChild(label);
   sliderRow.appendChild(slider);
+  sliderRow.appendChild(hint);
   box.appendChild(textArea);
   box.appendChild(sliderRow);
   document.documentElement.appendChild(box);
+}
+
+// Hides or shows the whole box. (Everything keeps running while it is hidden.)
+function setOverlayVisible(visible) {
+  const box = document.getElementById('defuser-overlay');
+  if (box !== null) box.style.display = visible ? '' : 'none'; // '' means "back to normal"
 }
 
 function showOverlay(text) {
@@ -141,6 +167,8 @@ if (typeof module !== 'undefined') {
   module.exports = {
     makeOverlayText,
     cleanMinLength,
+    isToggleShortcut,
+    setOverlayVisible,
     initOverlay,
     showOverlay,
     SMALLEST_MIN_LENGTH,

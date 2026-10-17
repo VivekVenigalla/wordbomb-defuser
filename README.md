@@ -11,6 +11,7 @@ It only shows suggestions. It never types or sends anything for you.
 1. Open `about:debugging#/runtime/this-firefox`.
 2. Click **Load Temporary Add-on...** and choose `manifest.json` from this folder.
 3. Open (or refresh) a wordbomb.io tab. A box appears in the top-left corner.
+4. Press **Alt+B** to hide the box, and again to bring it back. (Firefox remembers the choice.)
 
 A temporary add-on disappears when Firefox quits. After changing any file, press **Reload** on
 the add-on's card and refresh the game tab.
@@ -41,7 +42,7 @@ listens to the game's network connection.
 | `src/tiers.js` | `loadTiers`, `getTier`: how common a word is (from `tiers.txt`), 0 = everyday ... 8 = very rare. |
 | `src/rank-words.js` | `neededLettersIn` (which needed letters a word fills), `rankWords`: scores words (still-needed letters add points; rarer words and too-long words lose points) and keeps the best few. |
 | `src/suggest.js` | `getSuggestions`: decides which words to show right now. |
-| `src/overlay.js` | `makeOverlayText` (the text to show), `cleanMinLength` (checks the saved slider value), `initOverlay` and `showOverlay` (drawing it, with the slider). |
+| `src/overlay.js` | `makeOverlayText` (the text to show), `cleanMinLength` (checks the saved slider value), `isToggleShortcut` (is this the Alt+B key press?), `initOverlay`, `showOverlay` and `setOverlayVisible` (drawing the box). |
 | `src/content.js` | Connects the pieces above. |
 | `scripts/build-words.js` | Builds `words.txt` (from the `word-list` package) and `tiers.txt` (from `wordlist-english`). |
 | `helpers/bytes.js` | Small helpers shared by the tests. |

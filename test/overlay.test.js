@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const {
   makeOverlayText,
   cleanMinLength,
+  isToggleShortcut,
   SMALLEST_MIN_LENGTH,
   LARGEST_MIN_LENGTH,
 } = require('../src/overlay.js');
@@ -134,4 +135,24 @@ test('no brackets at all when no letters are needed or none are known', () => {
   const b = makeOverlayText({ prompt: 'thi', count: 5, myTurn: true, words: ['thing'] });
   assert.ok(a.includes('1. thing') && !a.includes('['));
   assert.ok(b.includes('1. thing') && !b.includes('['));
+});
+
+test('isToggleShortcut: Alt+B is the shortcut', () => {
+  assert.equal(isToggleShortcut({ altKey: true, code: 'KeyB' }), true);
+});
+
+test('isToggleShortcut: B on its own is not (the player is typing a word!)', () => {
+  assert.equal(isToggleShortcut({ altKey: false, code: 'KeyB' }), false);
+  assert.equal(isToggleShortcut({ code: 'KeyB' }), false);
+});
+
+test('isToggleShortcut: Alt with a different key is not', () => {
+  assert.equal(isToggleShortcut({ altKey: true, code: 'KeyA' }), false);
+  assert.equal(isToggleShortcut({ altKey: true, code: 'Digit1' }), false);
+});
+
+test('isToggleShortcut: Alt+B together with another modifier is not', () => {
+  assert.equal(isToggleShortcut({ altKey: true, ctrlKey: true, code: 'KeyB' }), false);
+  assert.equal(isToggleShortcut({ altKey: true, metaKey: true, code: 'KeyB' }), false);
+  assert.equal(isToggleShortcut({ altKey: true, shiftKey: true, code: 'KeyB' }), false);
 });

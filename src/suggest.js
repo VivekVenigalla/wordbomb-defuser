@@ -29,6 +29,7 @@ function getSuggestions(wordList, state, minLength, tiers) {
     minLength: minLength,
     maxLength: DEFAULT_MAX_LENGTH,
     tiers: tiers,
+    neededLetters: state.neededLetters, // words using these letters score higher
     limit: SUGGESTION_COUNT,
   });
 }

@@ -67,3 +67,40 @@ test('without tiers it still works (commonness is simply ignored)', () => {
   const result = getSuggestions(['thig', 'this'], stateWith('thi', 'me'), 2);
   assert.deepEqual(result, ['thig', 'this']); // alphabetical, as before
 });
+
+// A game state where it is our turn, the prompt is `prompt`, and the letters in `needed` are still needed.
+function stateNeeding(prompt, needed) {
+  const state = stateWith(prompt, 'me');
+  const healths = {};
+  for (const letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') healths[letter] = needed.includes(letter.toLowerCase()) ? 1 : 0;
+  applyEvent(state, { name: 'user-letter-healths', data: healths });
+  return state;
+}
+
+test('words using the letters we still need are suggested first', () => {
+  const words = ['thin', 'this', 'thing', 'thick', 'thigh'];
+  // Without needs, short words win. Needing "k" puts "thick" first; needing "g" puts a g-word first.
+  assert.equal(getSuggestions(words, stateNeeding('thi', 'k'), 2)[0], 'thick');
+  assert.ok(['thing', 'thigh'].includes(getSuggestions(words, stateNeeding('thi', 'g'), 2)[0]));
+});
+
+test('a word with two needed letters beats a word with one', () => {
+  const words = ['thing', 'thinking', 'thick']; // "thinking" has both k and g
+  assert.equal(getSuggestions(words, stateNeeding('thi', 'kg'), 2)[0], 'thinking');
+});
+
+test('when no letters are needed, the suggestions are the same as without the feature', () => {
+  const words = ['thin', 'thing', 'thick'];
+  assert.deepEqual(getSuggestions(words, stateNeeding('thi', ''), 2), getSuggestions(words, stateWith('thi', 'me'), 2));
+});
+
+test('needed letters still respect the minimum length', () => {
+  const words = ['thick', 'thickest']; // "thick" has the needed k but is too short for minLength 8
+  assert.deepEqual(getSuggestions(words, stateNeeding('thi', 'k'), 8), ['thickest']);
+});
+
+test('needed letters do not make an uncommon word beat a much more common one without good reason', () => {
+  // "thiqz" is tier 8 (-24) and has one needed letter (+10); "this" is tier 0: the common word wins
+  const tiers = loadTiers('this 0');
+  assert.equal(getSuggestions(['thiqz', 'this'], stateNeeding('thi', 'q'), 2, tiers)[0], 'this');
+});

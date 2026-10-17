@@ -4,6 +4,10 @@
   "private": true,
   "description": "Firefox extension that suggests words for wordbomb.io prompts",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "build:words": "node scripts/build-words.js"
+  },
+  "devDependencies": {
+    "word-list": "^4.1.0"
   }
 }

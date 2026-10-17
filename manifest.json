@@ -3,21 +3,40 @@
   "name": "Word Bomb Defuser",
   "version": "0.0.1",
   "description": "Helps you get the words you always need but never get. Is it cheating? I'll leave that up to you.",
-
   "browser_specific_settings": {
     "gecko": {
       "id": "wordbomb-defuser@v3rt3x.local",
       "strict_min_version": "140.0",
-      "data_collection_permissions": { "required": ["none"] }
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
     }
   },
-
-  "host_permissions": ["https://wordbomb.io/*"],
-
+  "host_permissions": [
+    "https://wordbomb.io/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["https://wordbomb.io/*"],
-      "js": ["src/content.js"],
+      "matches": [
+        "https://wordbomb.io/*"
+      ],
+      "js": [
+        "src/hook.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://wordbomb.io/*"
+      ],
+      "js": [
+        "src/decode.js",
+        "src/parse-frame.js",
+        "src/content.js"
+      ],
       "run_at": "document_start"
     }
   ]

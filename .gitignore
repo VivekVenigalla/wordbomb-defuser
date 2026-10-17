@@ -1,0 +1,8 @@
+# macOS adds these folders' view settings; never worth saving
+.DS_Store
+
+# folders that tools create; they can always be rebuilt
+node_modules/
+
+# ignore this file
+PLAN.md

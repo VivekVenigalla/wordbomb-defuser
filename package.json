@@ -1,0 +1,9 @@
+{
+  "name": "wordbomb-defuser",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Firefox extension that suggests words for wordbomb.io prompts",
+  "scripts": {
+    "test": "node --test"
+  }
+}

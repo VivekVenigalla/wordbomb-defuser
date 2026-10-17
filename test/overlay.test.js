@@ -118,3 +118,20 @@ test('no letters line when none are known or none are left', () => {
   assert.ok(!makeOverlayText({ prompt: 'thi', count: 5, myTurn: true, words: [], neededLetters: '' }).includes('Letters left'));
   assert.ok(!makeOverlayText({ prompt: 'thi', count: 5, myTurn: true, words: [] }).includes('Letters left'));
 });
+
+test('each word shows which needed letters it fills, in capitals and brackets', () => {
+  const text = makeOverlayText({
+    prompt: 'thi', count: 5, myTurn: true, words: ['anything', 'thinking', 'this'], neededLetters: 'gkwy',
+  });
+  assert.ok(text.includes('1. anything [GY]'));
+  assert.ok(text.includes('2. thinking [GK]'));
+  assert.ok(text.includes('3. this\n') || text.endsWith('3. this')); // fills nothing: no brackets
+  assert.ok(!text.includes('3. this ['));
+});
+
+test('no brackets at all when no letters are needed or none are known', () => {
+  const a = makeOverlayText({ prompt: 'thi', count: 5, myTurn: true, words: ['thing'], neededLetters: '' });
+  const b = makeOverlayText({ prompt: 'thi', count: 5, myTurn: true, words: ['thing'] });
+  assert.ok(a.includes('1. thing') && !a.includes('['));
+  assert.ok(b.includes('1. thing') && !b.includes('['));
+});

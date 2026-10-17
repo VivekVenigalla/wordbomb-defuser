@@ -19,16 +19,21 @@ const PENALTY_PER_EXTRA_LETTER = 25; // each letter beyond maxLength costs this 
 const PENALTY_PER_LETTER = 0.5; // a tiny cost for every letter, so shorter words win ties
 const PENALTY_PER_TIER = 3; // each step down in commonness costs this much (tier 0 = free, 8 = 24 points)
 
+// Which of the still-needed letters does this word contain? Returns them as text, each one
+// once, in alphabetical order:  neededLettersIn('anything', 'gkwy')  ->  'gy'
+// (The overlay uses this too, so what it shows always matches what the score counted.)
+function neededLettersIn(word, neededLetters) {
+  const needed = new Set(neededLetters || ''); // a Set of the needed letters
+  const found = new Set(); // new Set(word) style: each letter is kept only once
+  for (const letter of word) {
+    if (needed.has(letter)) found.add(letter);
+  }
+  return [...found].sort().join('');
+}
+
 function scoreWord(word, options = {}) {
   const maxLength = options.maxLength === undefined ? 12 : options.maxLength;
-  const needed = new Set(options.neededLetters || ''); // a Set of the needed letters
-
-  // Count how many DIFFERENT needed letters the word contains.
-  // (new Set(word) keeps each letter once, so "aaa" counts "a" just one time.)
-  let neededUsed = 0;
-  for (const letter of new Set(word)) {
-    if (needed.has(letter)) neededUsed += 1;
-  }
+  const neededUsed = neededLettersIn(word, options.neededLetters).length; // how many different ones
 
   const extraLetters = Math.max(0, word.length - maxLength); // 0 if the word is short enough
 
@@ -61,4 +66,4 @@ function rankWords(words, options = {}) {
   return scored.slice(0, limit).map((item) => item.word);
 }
 
-if (typeof module !== 'undefined') module.exports = { scoreWord, rankWords, PENALTY_PER_TIER };
+if (typeof module !== 'undefined') module.exports = { scoreWord, rankWords, neededLettersIn, PENALTY_PER_TIER };

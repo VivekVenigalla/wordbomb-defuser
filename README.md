@@ -1,8 +1,8 @@
 # Word Bomb Defuser
 
 A small Firefox extension for [wordbomb.io](https://wordbomb.io). When it is your turn it shows a
-box with the current prompt (the 2-3 letters that must appear in your word) and five suggested
-words. A slider sets the minimum word length.
+box with the current prompt (the 2-3 letters that must appear in your word), the alphabet-bonus
+letters you still need, and five suggested words (each marked with the needed letters it fills). A slider sets the minimum word length.
 
 It only shows suggestions. It never types or sends anything for you.
 
@@ -39,7 +39,7 @@ listens to the game's network connection.
 | `src/game-state.js` | Remembers the current prompt, whose turn it is, and which alphabet-bonus letters are still needed. Learns your player id from the connection address. |
 | `src/find-words.js` | `loadWords`, `findWords`: every word that contains the prompt. |
 | `src/tiers.js` | `loadTiers`, `getTier`: how common a word is (from `tiers.txt`), 0 = everyday ... 8 = very rare. |
-| `src/rank-words.js` | `rankWords`: scores words (still-needed letters add points; rarer words and too-long words lose points) and keeps the best few. |
+| `src/rank-words.js` | `neededLettersIn` (which needed letters a word fills), `rankWords`: scores words (still-needed letters add points; rarer words and too-long words lose points) and keeps the best few. |
 | `src/suggest.js` | `getSuggestions`: decides which words to show right now. |
 | `src/overlay.js` | `makeOverlayText` (the text to show), `cleanMinLength` (checks the saved slider value), `initOverlay` and `showOverlay` (drawing it, with the slider). |
 | `src/content.js` | Connects the pieces above. |

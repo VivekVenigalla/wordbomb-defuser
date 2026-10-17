@@ -3,7 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { scoreWord, rankWords, PENALTY_PER_TIER } = require('../src/rank-words.js');
+const { scoreWord, rankWords, neededLettersIn, PENALTY_PER_TIER } = require('../src/rank-words.js');
 const { loadTiers } = require('../src/tiers.js');
 const { loadWords, findWords } = require('../src/find-words.js');
 
@@ -148,4 +148,28 @@ test('real word list: ranking the biggest result list is still fast', () => {
   for (let i = 0; i < 5; i++) rankWords(matches, { neededLetters: 'xzq' });
   const perRank = (performance.now() - start) / 5;
   assert.ok(perRank < 200, 'one ranking took ' + perRank.toFixed(1) + 'ms');
+});
+
+test('neededLettersIn: lists the needed letters a word contains, alphabetically', () => {
+  assert.equal(neededLettersIn('anything', 'gkwy'), 'gy');
+  assert.equal(neededLettersIn('thinking', 'zgk'), 'gk');
+});
+
+test('neededLettersIn: each letter is listed once, even if the word repeats it', () => {
+  assert.equal(neededLettersIn('banana', 'a'), 'a');
+  assert.equal(neededLettersIn('zizzy', 'zy'), 'yz');
+});
+
+test('neededLettersIn: nothing when the word has none of them, or none are needed', () => {
+  assert.equal(neededLettersIn('this', 'xqz'), '');
+  assert.equal(neededLettersIn('this', ''), '');
+  assert.equal(neededLettersIn('this', undefined), '');
+});
+
+test('neededLettersIn: the count matches what scoreWord rewards', () => {
+  for (const word of ['anything', 'banana', 'quizzing', 'this']) {
+    const needed = 'gkwyqzan';
+    const bonus = scoreWord(word, { neededLetters: needed }) - scoreWord(word);
+    assert.equal(bonus, neededLettersIn(word, needed).length * 10);
+  }
 });

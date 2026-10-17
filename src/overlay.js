@@ -14,6 +14,12 @@
 //   minLength   the slider's value (optional)
 //   neededLetters   the letters still needed for the alphabet bonus, e.g. 'bcd' (optional)
 
+// In Node (the tests) we load rank-words.js ourselves; in the browser the manifest already did.
+const overlayParts =
+  typeof require !== 'undefined'
+    ? { neededLettersIn: require('./rank-words.js').neededLettersIn }
+    : { neededLettersIn };
+
 const SMALLEST_MIN_LENGTH = 2; // a prompt has at least 2 letters, so a shorter minimum means nothing
 const LARGEST_MIN_LENGTH = 15;
 
@@ -59,7 +65,11 @@ function makeOverlayText(info) {
       lines.push('(try a smaller minimum length)'); // the slider may be the reason
     }
   } else {
-    info.words.forEach((word, index) => lines.push(index + 1 + '. ' + word));
+    info.words.forEach((word, index) => {
+      // If the word uses letters we still need, show which, e.g. "anything [GY]".
+      const filled = overlayParts.neededLettersIn(word, info.neededLetters).toUpperCase();
+      lines.push(index + 1 + '. ' + word + (filled === '' ? '' : ' [' + filled + ']'));
+    });
   }
   return lines.join('\n');
 }

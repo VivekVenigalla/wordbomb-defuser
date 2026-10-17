@@ -4,6 +4,7 @@
 //   rankWords(words, options)  sorts words by score and returns the best few.
 //
 // The options (all optional):
+//   minLength       words shorter than this are left out completely. (default 0: keep everything)
 //   maxLength       the longest word you can type in time. Longer words are marked down. (default 12)
 //   neededLetters   letters you still need for the alphabet bonus, e.g. 'qxz'. (default none)
 //   limit           how many words to return. (default 5)
@@ -34,9 +35,13 @@ function scoreWord(word, options = {}) {
 
 function rankWords(words, options = {}) {
   const limit = options.limit === undefined ? 5 : options.limit;
+  const minLength = options.minLength === undefined ? 0 : options.minLength;
+
+  // Throw away words that are too short, before doing any scoring.
+  const longEnough = words.filter((word) => word.length >= minLength);
 
   // Pair each word with its score, so we only work out each score once.
-  const scored = words.map((word) => ({ word: word, score: scoreWord(word, options) }));
+  const scored = longEnough.map((word) => ({ word: word, score: scoreWord(word, options) }));
 
   scored.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score; // higher score first

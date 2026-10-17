@@ -1,13 +1,19 @@
-// The overlay: a plain box on top of the game that shows the prompt and our suggested words.
+// The overlay: a plain box on top of the game that shows the prompt, our suggested words,
+// and a slider for the minimum word length.
 //
 //   makeOverlayText(info)   builds the text to show. (Pure: no browser needed, so it is tested.)
-//   showOverlay(text)       puts that text in the box on the page, creating the box if needed.
+//   initOverlay(options)    creates the box and the slider on the page. Call it once.
+//   showOverlay(text)       changes the text inside the box.
 //
-// For makeOverlayText, `info` is  { prompt, count, myTurn, words }:
-//   prompt   the letters, e.g. 'thi'  (empty string if no game is running)
-//   count    how many words the game says fit the prompt
-//   myTurn   true, false, or null when we do not know
-//   words    the suggested words, best first
+// For makeOverlayText, `info` is  { prompt, count, myTurn, words, minLength }:
+//   prompt      the letters, e.g. 'thi'  (empty string if no game is running)
+//   count       how many words the game says fit the prompt
+//   myTurn      true, false, or null when we do not know
+//   words       the suggested words, best first
+//   minLength   the slider's value (optional)
+
+const SMALLEST_MIN_LENGTH = 2; // a prompt has at least 2 letters, so a shorter minimum means nothing
+const LARGEST_MIN_LENGTH = 15;
 
 function makeOverlayText(info) {
   const lines = ['Word Bomb Defuser'];
@@ -28,35 +34,78 @@ function makeOverlayText(info) {
 
   if (info.words.length === 0) {
     lines.push('No words found');
+    if (info.minLength !== undefined && info.minLength > SMALLEST_MIN_LENGTH) {
+      lines.push('(try a smaller minimum length)'); // the slider may be the reason
+    }
   } else {
     info.words.forEach((word, index) => lines.push(index + 1 + '. ' + word));
   }
   return lines.join('\n');
 }
 
-function showOverlay(text) {
-  let box = document.getElementById('defuser-overlay');
+// Builds the box on the page. `options` is { minLength, onMinLengthChange }:
+// minLength is the slider's starting value, and onMinLengthChange is a function that
+// we call with the new value every time the slider moves.
+function initOverlay(options) {
+  if (document.getElementById('defuser-overlay') !== null) return; // already built
 
-  if (box === null) {
-    box = document.createElement('div');
-    box.id = 'defuser-overlay';
-    box.style.cssText = [
-      'position: fixed', // stay in place, on top of the page
-      'top: 10px',
-      'left: 10px',
-      'z-index: 2147483647', // the biggest layer number: above everything else
-      'background: white',
-      'color: black',
-      'border: 2px solid black',
-      'padding: 8px',
-      'font: 14px monospace',
-      'white-space: pre', // keep our line breaks
-      'pointer-events: none', // clicks pass through, so the box never blocks the game
-    ].join('; ');
-    document.documentElement.appendChild(box);
-  }
+  const box = document.createElement('div');
+  box.id = 'defuser-overlay';
+  box.style.cssText = [
+    'position: fixed', // stay in place, on top of the page
+    'top: 10px',
+    'left: 10px',
+    'z-index: 2147483647', // the biggest layer number: above everything else
+    'background: white',
+    'color: black',
+    'border: 2px solid black',
+    'padding: 8px',
+    'font: 14px monospace',
+    'pointer-events: none', // clicks pass through the box, so it never blocks the game...
+  ].join('; ');
 
-  box.textContent = text;
+  const textArea = document.createElement('div');
+  textArea.id = 'defuser-overlay-text';
+  textArea.style.cssText = 'white-space: pre'; // keep our line breaks
+  textArea.textContent = 'Word Bomb Defuser';
+
+  // ...except for this row, which switches clicks back on so the slider can be used.
+  const sliderRow = document.createElement('div');
+  sliderRow.style.cssText = 'pointer-events: auto; margin-top: 8px';
+
+  const label = document.createElement('span');
+  label.textContent = 'Min length: ' + options.minLength + ' ';
+
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.min = String(SMALLEST_MIN_LENGTH);
+  slider.max = String(LARGEST_MIN_LENGTH);
+  slider.step = '1';
+  slider.value = String(options.minLength);
+
+  slider.addEventListener('input', function () {
+    // "input" fires continuously while the slider is dragged.
+    label.textContent = 'Min length: ' + slider.value + ' ';
+    options.onMinLengthChange(Number(slider.value));
+  });
+  slider.addEventListener('change', function () {
+    // "change" fires when you let go. Give the keyboard back to the game: otherwise the slider
+    // keeps focus and the arrow keys would move it instead of reaching the game.
+    slider.blur();
+  });
+
+  sliderRow.appendChild(label);
+  sliderRow.appendChild(slider);
+  box.appendChild(textArea);
+  box.appendChild(sliderRow);
+  document.documentElement.appendChild(box);
 }
 
-if (typeof module !== 'undefined') module.exports = { makeOverlayText, showOverlay };
+function showOverlay(text) {
+  const textArea = document.getElementById('defuser-overlay-text');
+  if (textArea !== null) textArea.textContent = text;
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = { makeOverlayText, initOverlay, showOverlay, SMALLEST_MIN_LENGTH, LARGEST_MIN_LENGTH };
+}

@@ -6,13 +6,15 @@ console.log('[defuser] content script is running on', location.href);
 
 const state = createGameState();
 let wordList = []; // filled in once words.txt has been loaded (below)
+let minLength = SMALLEST_MIN_LENGTH; // set by the slider; starts at the smallest value, meaning "no limit"
 
 // Work out the suggestions for the current prompt and draw the box.
 function refresh() {
   let words = [];
   if (state.prompt !== '' && isMyTurn(state) !== false) {
     const matches = findWords(wordList, state.prompt);
-    words = rankWords(matches, { maxLength: 12, limit: 5 });
+    // If the slider asks for long words, raise maxLength too, so those words are not marked down.
+    words = rankWords(matches, { minLength: minLength, maxLength: Math.max(12, minLength), limit: 5 });
   }
 
   showOverlay(
@@ -21,9 +23,19 @@ function refresh() {
       count: state.count,
       myTurn: isMyTurn(state),
       words: words,
+      minLength: minLength,
     })
   );
 }
+
+// Draw the box with its slider. Moving the slider changes minLength and redraws the suggestions.
+initOverlay({
+  minLength: minLength,
+  onMinLengthChange: function (newValue) {
+    minLength = newValue;
+    refresh();
+  },
+});
 
 // Load the word list. `fetch` downloads a file; here the file is part of the extension itself.
 fetch(browser.runtime.getURL('words.txt'))

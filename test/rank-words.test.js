@@ -66,6 +66,29 @@ test('rankWords: does not change the list you give it', () => {
   assert.deepEqual(words, ['zebra', 'ant', 'mouse']);
 });
 
+test('rankWords: minLength leaves out words that are too short', () => {
+  const ranked = rankWords(['cat', 'catalog', 'cats', 'category'], { minLength: 5, limit: 10 });
+  assert.deepEqual(ranked.sort(), ['catalog', 'category']);
+});
+
+test('rankWords: a word exactly as long as minLength is kept', () => {
+  assert.deepEqual(rankWords(['abc', 'abcd'], { minLength: 4 }), ['abcd']);
+  assert.deepEqual(rankWords(['abc', 'abcd'], { minLength: 3 }), ['abc', 'abcd']);
+});
+
+test('rankWords: minLength removes a short word even if it has a needed letter', () => {
+  const ranked = rankWords(['zip', 'plain'], { minLength: 5, neededLetters: 'z' });
+  assert.deepEqual(ranked, ['plain']);
+});
+
+test('rankWords: if nothing is long enough the result is empty', () => {
+  assert.deepEqual(rankWords(['a', 'bb', 'ccc'], { minLength: 10 }), []);
+});
+
+test('rankWords: without minLength nothing is left out', () => {
+  assert.deepEqual(rankWords(['a', 'bb'], { limit: 10 }), ['a', 'bb']);
+});
+
 test('rankWords: an empty list gives an empty list', () => {
   assert.deepEqual(rankWords([]), []);
 });

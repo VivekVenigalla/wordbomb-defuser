@@ -17,10 +17,11 @@
   const alreadySeen = new WeakSet(); // events we have already copied (the game may read `data` several times)
   const original = Object.getOwnPropertyDescriptor(MessageEvent.prototype, 'data');
 
-  // Pass a message's bytes to content.js. `window.postMessage` is the browser's way of
-  // sending a note between scripts on the same page.
-  function passAlong(bytes) {
-    window.postMessage({ source: 'defuser', bytes: bytes }, location.origin);
+  // Pass a message's bytes to content.js, along with the address of the connection it came
+  // from (that address contains our own player id). `window.postMessage` is the browser's way
+  // of sending a note between scripts on the same page.
+  function passAlong(bytes, url) {
+    window.postMessage({ source: 'defuser', bytes: bytes, url: url }, location.origin);
   }
 
   function inspect(event, data) {
@@ -28,12 +29,13 @@
     if (alreadySeen.has(event)) return;
     alreadySeen.add(event);
 
+    const url = event.target.url; // read it now: the Blob branch below runs later
     if (data instanceof ArrayBuffer) {
-      passAlong(new Uint8Array(data));
+      passAlong(new Uint8Array(data), url);
     } else if (data instanceof Blob) {
       // Some connections deliver a "Blob"; reading its bytes takes a moment, so it is asynchronous.
       data.arrayBuffer().then(function (buffer) {
-        passAlong(new Uint8Array(buffer));
+        passAlong(new Uint8Array(buffer), url);
       });
     }
   }

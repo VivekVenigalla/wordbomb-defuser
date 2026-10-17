@@ -35,6 +35,7 @@
       "js": [
         "src/decode.js",
         "src/parse-frame.js",
+        "src/game-state.js",
         "src/content.js"
       ],
       "run_at": "document_start"

@@ -61,3 +61,14 @@ test('the slider range makes sense', () => {
   assert.ok(SMALLEST_MIN_LENGTH >= 2);
   assert.ok(LARGEST_MIN_LENGTH > SMALLEST_MIN_LENGTH);
 });
+
+test('the word count says "1 word" (not "1 words") and "2 words"', () => {
+  assert.ok(makeOverlayText({ prompt: 'zq', count: 1, myTurn: true, words: [] }).includes('Prompt: ZQ (1 word)'));
+  assert.ok(makeOverlayText({ prompt: 'zq', count: 2, myTurn: true, words: [] }).includes('Prompt: ZQ (2 words)'));
+});
+
+test('when the game gave no count (0) the prompt line has no count at all', () => {
+  const text = makeOverlayText({ prompt: 'thi', count: 0, myTurn: true, words: ['thin'] });
+  assert.ok(text.includes('Prompt: THI\n'));
+  assert.ok(!text.includes('0 words'));
+});

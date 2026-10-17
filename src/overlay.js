@@ -15,6 +15,12 @@
 const SMALLEST_MIN_LENGTH = 2; // a prompt has at least 2 letters, so a shorter minimum means nothing
 const LARGEST_MIN_LENGTH = 15;
 
+// "1 word", "2 words". If the count is 0 we have no real number, so we say nothing about it.
+function describeCount(count) {
+  if (count <= 0) return '';
+  return ' (' + count + (count === 1 ? ' word)' : ' words)');
+}
+
 function makeOverlayText(info) {
   const lines = ['Word Bomb Defuser'];
 
@@ -23,7 +29,7 @@ function makeOverlayText(info) {
     return lines.join('\n');
   }
 
-  lines.push('Prompt: ' + info.prompt.toUpperCase() + ' (' + info.count + ' words)');
+  lines.push('Prompt: ' + info.prompt.toUpperCase() + describeCount(info.count));
 
   if (info.myTurn === false) {
     lines.push('Not your turn');

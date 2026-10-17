@@ -24,20 +24,30 @@
     window.postMessage({ source: 'defuser', bytes: bytes, url: url }, location.origin);
   }
 
+  // Messages wait in this single line (a chain of "promises") and are passed along one at a time.
+  // Why: reading a Blob takes a moment, so without the line a Blob could be overtaken by a later
+  // message and we would process messages out of order, ending up with an outdated prompt.
+  let line = Promise.resolve();
+
   function inspect(event, data) {
     if (!(event.target instanceof WebSocket)) return; // only messages from game connections
     if (alreadySeen.has(event)) return;
     alreadySeen.add(event);
 
-    const url = event.target.url; // read it now: the Blob branch below runs later
-    if (data instanceof ArrayBuffer) {
-      passAlong(new Uint8Array(data), url);
-    } else if (data instanceof Blob) {
-      // Some connections deliver a "Blob"; reading its bytes takes a moment, so it is asynchronous.
-      data.arrayBuffer().then(function (buffer) {
+    const isBinary = data instanceof ArrayBuffer || data instanceof Blob;
+    if (!isBinary) return; // plain text messages are not game events
+
+    const url = event.target.url; // read it now, while we are sure to have the event
+    line = line
+      .then(function () {
+        return data instanceof Blob ? data.arrayBuffer() : data; // wait for the Blob's bytes if needed
+      })
+      .then(function (buffer) {
         passAlong(new Uint8Array(buffer), url);
+      })
+      .catch(function () {
+        // If one message cannot be read, skip it, and keep the line moving for the next ones.
       });
-    }
   }
 
   Object.defineProperty(MessageEvent.prototype, 'data', {

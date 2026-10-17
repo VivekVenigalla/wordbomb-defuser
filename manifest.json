@@ -38,6 +38,7 @@
         "src/game-state.js",
         "src/find-words.js",
         "src/rank-words.js",
+        "src/suggest.js",
         "src/overlay.js",
         "src/content.js"
       ],

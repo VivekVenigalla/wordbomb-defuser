@@ -1,17 +1,8 @@
 // Tests for src/decode.js. Run them with:  npm test
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { text, bytes } = require('../helpers/bytes.js');
 const { decode } = require('../src/decode.js');
-
-// Helper: build the bytes for a short piece of text (type byte, then the letters).
-function text(t) {
-  return [0xa0 | t.length, ...new TextEncoder().encode(t)];
-}
-
-// Helper: turn a plain list of numbers into the Uint8Array that decode expects.
-function bytes(...numbers) {
-  return Uint8Array.from(numbers);
-}
 
 test('small positive numbers are stored in the type byte itself', () => {
   assert.deepEqual(decode(bytes(0)), { value: 0, offset: 1 });

@@ -25,6 +25,18 @@ function decode(bytes, offset = 0) {
     if (pos + count > bytes.length) throw new Error('decode: message ended too early');
   }
 
+  // Read one number that takes up `size` bytes. `getter` says how to read it (for example,
+  // as a whole number or as a decimal). Afterwards we move forward past those bytes.
+  function readNumber(size, getter) {
+    need(size);
+    const value = getter(pos);
+    pos += size;
+    return value;
+  }
+
+  const readByte = () => readNumber(1, (at) => view.getUint8(at)); // a number from 0 to 255
+  const readShort = () => readNumber(2, (at) => view.getUint16(at)); // a number from 0 to 65535
+
   // Read `length` bytes and turn them into text.
   function readText(length) {
     need(length);
@@ -68,18 +80,18 @@ function decode(bytes, offset = 0) {
       case 0xc0: return null;
       case 0xc2: return false;
       case 0xc3: return true;
-      case 0xca: { need(4); const v = view.getFloat32(pos); pos += 4; return v; }
-      case 0xcb: { need(8); const v = view.getFloat64(pos); pos += 8; return v; }
-      case 0xcc: { need(1); const v = view.getUint8(pos); pos += 1; return v; }
-      case 0xcd: { need(2); const v = view.getUint16(pos); pos += 2; return v; }
-      case 0xce: { need(4); const v = view.getUint32(pos); pos += 4; return v; }
-      case 0xd0: { need(1); const v = view.getInt8(pos); pos += 1; return v; }
-      case 0xd1: { need(2); const v = view.getInt16(pos); pos += 2; return v; }
-      case 0xd2: { need(4); const v = view.getInt32(pos); pos += 4; return v; }
-      case 0xd9: { need(1); const length = view.getUint8(pos); pos += 1; return readText(length); }
-      case 0xda: { need(2); const length = view.getUint16(pos); pos += 2; return readText(length); }
-      case 0xdc: { need(2); const count = view.getUint16(pos); pos += 2; return readList(count); }
-      case 0xde: { need(2); const count = view.getUint16(pos); pos += 2; return readObject(count); }
+      case 0xca: return readNumber(4, (at) => view.getFloat32(at));
+      case 0xcb: return readNumber(8, (at) => view.getFloat64(at));
+      case 0xcc: return readByte();
+      case 0xcd: return readShort();
+      case 0xce: return readNumber(4, (at) => view.getUint32(at));
+      case 0xd0: return readNumber(1, (at) => view.getInt8(at));
+      case 0xd1: return readNumber(2, (at) => view.getInt16(at));
+      case 0xd2: return readNumber(4, (at) => view.getInt32(at));
+      case 0xd9: return readText(readByte()); // text whose length is in the next byte
+      case 0xda: return readText(readShort()); // ...or in the next 2 bytes
+      case 0xdc: return readList(readShort());
+      case 0xde: return readObject(readShort());
       default:
         throw new Error('decode: unknown type byte 0x' + type.toString(16));
     }

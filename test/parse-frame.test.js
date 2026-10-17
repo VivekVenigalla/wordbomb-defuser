@@ -1,14 +1,8 @@
 // Tests for src/parse-frame.js. Run them with:  npm test
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { text, bytes } = require('../helpers/bytes.js');
 const { parseFrame } = require('../src/parse-frame.js');
-
-function text(t) {
-  return [0xa0 | t.length, ...new TextEncoder().encode(t)];
-}
-function bytes(...numbers) {
-  return Uint8Array.from(numbers);
-}
 
 test('an event with a name and data', () => {
   const frame = bytes(

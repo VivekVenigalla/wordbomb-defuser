@@ -10,19 +10,12 @@ let minLength = SMALLEST_MIN_LENGTH; // set by the slider; starts at the smalles
 
 // Work out the suggestions for the current prompt and draw the box.
 function refresh() {
-  let words = [];
-  if (state.prompt !== '' && isMyTurn(state) !== false) {
-    const matches = findWords(wordList, state.prompt);
-    // If the slider asks for long words, raise maxLength too, so those words are not marked down.
-    words = rankWords(matches, { minLength: minLength, maxLength: Math.max(12, minLength), limit: 5 });
-  }
-
   showOverlay(
     makeOverlayText({
       prompt: state.prompt,
       count: state.count,
       myTurn: isMyTurn(state),
-      words: words,
+      words: getSuggestions(wordList, state, minLength),
       minLength: minLength,
     })
   );

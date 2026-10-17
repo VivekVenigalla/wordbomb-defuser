@@ -6,6 +6,7 @@ console.log('[defuser] content script is running on', location.href);
 
 const state = createGameState();
 let wordList = []; // filled in once words.txt has been loaded (below)
+let tiers = new Map(); // how common each word is; filled in once tiers.txt has been loaded
 let minLength = SMALLEST_MIN_LENGTH; // set by the slider; starts at the smallest value, meaning "no limit"
 
 // Work out the suggestions for the current prompt and draw the box.
@@ -15,7 +16,7 @@ function refresh() {
       prompt: state.prompt,
       count: state.count,
       myTurn: isMyTurn(state),
-      words: getSuggestions(wordList, state, minLength),
+      words: getSuggestions(wordList, state, minLength, tiers),
       minLength: minLength,
     })
   );
@@ -30,15 +31,20 @@ initOverlay({
   },
 });
 
-// Load the word list. `fetch` downloads a file; here the file is part of the extension itself.
-fetch(browser.runtime.getURL('words.txt'))
-  .then((response) => response.text())
-  .then((text) => {
-    wordList = loadWords(text);
-    console.log('[defuser] loaded', wordList.length, 'words');
-    refresh(); // in case a prompt arrived while the list was still loading
+// Load the two data files. `fetch` downloads a file; here the files are part of the extension itself.
+// Promise.all means "do both downloads, and continue when both are finished".
+function loadText(fileName) {
+  return fetch(browser.runtime.getURL(fileName)).then((response) => response.text());
+}
+
+Promise.all([loadText('words.txt'), loadText('tiers.txt')])
+  .then(([wordsText, tiersText]) => {
+    wordList = loadWords(wordsText);
+    tiers = loadTiers(tiersText);
+    console.log('[defuser] loaded', wordList.length, 'words and', tiers.size, 'word tiers');
+    refresh(); // in case a prompt arrived while the files were still loading
   })
-  .catch((error) => console.log('[defuser] could not load words.txt:', error));
+  .catch((error) => console.log('[defuser] could not load the word files:', error));
 
 window.addEventListener('message', function (message) {
   // The page can post messages too, so make sure this one is ours.

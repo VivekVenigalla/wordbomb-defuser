@@ -3,7 +3,8 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { scoreWord, rankWords } = require('../src/rank-words.js');
+const { scoreWord, rankWords, PENALTY_PER_TIER } = require('../src/rank-words.js');
+const { loadTiers } = require('../src/tiers.js');
 const { loadWords, findWords } = require('../src/find-words.js');
 
 test('scoreWord: using a needed letter raises the score', () => {
@@ -87,6 +88,43 @@ test('rankWords: if nothing is long enough the result is empty', () => {
 
 test('rankWords: without minLength nothing is left out', () => {
   assert.deepEqual(rankWords(['a', 'bb'], { limit: 10 }), ['a', 'bb']);
+});
+
+test('scoreWord: a more common word scores higher than a rarer one of the same length', () => {
+  const tiers = loadTiers('cat 0\ndog 5');
+  assert.ok(scoreWord('cat', { tiers }) > scoreWord('dog', { tiers }));
+});
+
+test('scoreWord: each step down in commonness costs exactly PENALTY_PER_TIER points', () => {
+  const tiers = loadTiers('aaa 1\nbbb 2\nccc 5');
+  assert.equal(scoreWord('aaa', { tiers }) - scoreWord('bbb', { tiers }), PENALTY_PER_TIER);
+  assert.equal(scoreWord('aaa', { tiers }) - scoreWord('ccc', { tiers }), 4 * PENALTY_PER_TIER);
+});
+
+test('scoreWord: a word missing from the tiers counts as the rarest (tier 8)', () => {
+  const tiers = loadTiers('aaa 0');
+  assert.equal(scoreWord('aaa', { tiers }) - scoreWord('zzz', { tiers }), 8 * PENALTY_PER_TIER);
+});
+
+test('scoreWord: without the tiers option the score ignores commonness', () => {
+  assert.equal(scoreWord('cat'), -1.5); // 3 letters * 0.5, nothing else
+});
+
+test('rankWords: with tiers, a common word beats a rare word of the same length', () => {
+  const tiers = loadTiers('this 0\nthig 7');
+  assert.deepEqual(rankWords(['thig', 'this'], { tiers }), ['this', 'thig']);
+});
+
+test('rankWords: a much more common word can beat a shorter rare one', () => {
+  // "think" (5 letters, tier 0) vs "thig" (4 letters, tier 7): the 7 steps outweigh 1 extra letter
+  const tiers = loadTiers('think 0\nthig 7');
+  assert.equal(rankWords(['thig', 'think'], { tiers })[0], 'think');
+});
+
+test('rankWords: needed letters can still beat commonness, if there are enough of them', () => {
+  const tiers = loadTiers('plain 0\nquartz 2');
+  // "quartz" is 2 tiers rarer (-6) but has the needed letters q and z (+20)
+  assert.equal(rankWords(['plain', 'quartz'], { tiers, neededLetters: 'qz' })[0], 'quartz');
 });
 
 test('rankWords: an empty list gives an empty list', () => {

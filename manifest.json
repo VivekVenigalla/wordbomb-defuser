@@ -37,6 +37,7 @@
         "src/parse-frame.js",
         "src/game-state.js",
         "src/find-words.js",
+        "src/tiers.js",
         "src/rank-words.js",
         "src/suggest.js",
         "src/overlay.js",
@@ -48,7 +49,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "words.txt"
+        "words.txt",
+        "tiers.txt"
       ],
       "matches": [
         "https://wordbomb.io/*"

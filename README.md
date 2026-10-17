@@ -19,9 +19,9 @@ the add-on's card and refresh the game tab.
 
     npm test
 
-(Needs Node.js. The only dependency, `word-list`, is used just to build the word list.)
+(Needs Node.js. The two dependencies, `word-list` and `wordlist-english`, are only used to build the data files.)
 
-To rebuild `words.txt`: `npm install` and then `npm run build:words`.
+To rebuild `words.txt` and `tiers.txt`: `npm install` and then `npm run build:words`.
 
 ## How it works
 
@@ -38,11 +38,12 @@ listens to the game's network connection.
 | `src/parse-frame.js` | `parseFrame`: finds the event name and its data inside one message. |
 | `src/game-state.js` | Remembers the current prompt and whose turn it is. Learns your player id from the connection address. |
 | `src/find-words.js` | `loadWords`, `findWords`: every word that contains the prompt. |
-| `src/rank-words.js` | `rankWords`: scores words and keeps the best few. |
+| `src/tiers.js` | `loadTiers`, `getTier`: how common a word is (from `tiers.txt`), 0 = everyday ... 8 = very rare. |
+| `src/rank-words.js` | `rankWords`: scores words (rarer words and too-long words lose points) and keeps the best few. |
 | `src/suggest.js` | `getSuggestions`: decides which words to show right now. |
 | `src/overlay.js` | `makeOverlayText` (the text to show), `initOverlay` and `showOverlay` (drawing it, with the slider). |
 | `src/content.js` | Connects the pieces above. |
-| `scripts/build-words.js` | Builds `words.txt` from the `word-list` package. |
+| `scripts/build-words.js` | Builds `words.txt` (from the `word-list` package) and `tiers.txt` (from `wordlist-english`). |
 | `helpers/bytes.js` | Small helpers shared by the tests. |
 | `test/` | One test file per source file. |
 
@@ -51,8 +52,8 @@ must come after the files it uses.
 
 ## Known limits
 
-- The word list has no "how common is this word" information, so at long minimum lengths the
-  suggestions can be obscure words.
+- Words missing from `tiers.txt` count as the rarest kind. At very long minimum lengths the
+  suggestions can still be unusual words, because few common words are that long.
 - The slider forgets its value when the page reloads.
 - It does not yet use the game's alphabet-bonus letters.
 - The player-id assumption (it is in the connection address) is unverified; if the box says

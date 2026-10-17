@@ -3,6 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { getSuggestions, SUGGESTION_COUNT } = require('../src/suggest.js');
 const { createGameState, setMyId, applyEvent } = require('../src/game-state.js');
+const { loadTiers } = require('../src/tiers.js');
 
 const WORDS = ['thin', 'thing', 'think', 'thinking', 'nothing', 'this', 'cat', 'catalog'];
 
@@ -53,4 +54,16 @@ test('a very large minLength still works', () => {
 
 test('no matching words gives an empty list', () => {
   assert.deepEqual(getSuggestions(WORDS, stateWith('zzq', 'me'), 2), []);
+});
+
+test('with tiers, everyday words are suggested before rare ones', () => {
+  const words = ['thig', 'thin', 'this', 'thio'];
+  const tiers = loadTiers('this 0\nthin 1\nthig 7\nthio 7');
+  const result = getSuggestions(words, stateWith('thi', 'me'), 2, tiers);
+  assert.deepEqual(result.slice(0, 2), ['this', 'thin']);
+});
+
+test('without tiers it still works (commonness is simply ignored)', () => {
+  const result = getSuggestions(['thig', 'this'], stateWith('thi', 'me'), 2);
+  assert.deepEqual(result, ['thig', 'this']); // alphabetical, as before
 });

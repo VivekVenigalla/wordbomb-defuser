@@ -41,6 +41,7 @@
         "src/rank-words.js",
         "src/suggest.js",
         "src/overlay.js",
+        "src/enabled.js",
         "src/content.js"
       ],
       "run_at": "document_start"
@@ -59,5 +60,19 @@
   ],
   "permissions": [
     "storage"
-  ]
+  ],
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  },
+  "action": {
+    "default_title": "Word Bomb Defuser",
+    "default_icon": "icons/icon.svg"
+  },
+  "background": {
+    "scripts": [
+      "src/enabled.js",
+      "src/background.js"
+    ]
+  }
 }

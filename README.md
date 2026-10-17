@@ -12,6 +12,9 @@ It only shows suggestions. It never types or sends anything for you.
 2. Click **Load Temporary Add-on...** and choose `manifest.json` from this folder.
 3. Open (or refresh) a wordbomb.io tab. A box appears in the top-left corner.
 4. Press **Alt+B** to hide the box, and again to bring it back. (Firefox remembers the choice.)
+5. Click the extension's toolbar button (the bomb icon; if you don't see it, open the puzzle-piece
+   Extensions menu and pin it) to switch the whole extension off. A grey **OFF** badge shows while
+   it is off. Click again to switch it back on.
 
 A temporary add-on disappears when Firefox quits. After changing any file, press **Reload** on
 the add-on's card and refresh the game tab.
@@ -43,8 +46,11 @@ listens to the game's network connection.
 | `src/rank-words.js` | `neededLettersIn` (which needed letters a word fills), `rankWords`: scores words (still-needed letters add points; rarer words and too-long words lose points) and keeps the best few. |
 | `src/suggest.js` | `getSuggestions`: decides which words to show right now. |
 | `src/overlay.js` | `makeOverlayText` (the text to show), `cleanMinLength` (checks the saved slider value), `isToggleShortcut` (is this the Alt+B key press?), `initOverlay`, `showOverlay` and `setOverlayVisible` (drawing the box). |
+| `src/enabled.js` | `isEnabledValue`, `describeEnabled`: the on/off switch, and how the toolbar button looks. |
+| `src/background.js` | Looks after the toolbar button: clicking it flips the on/off value in storage. |
 | `src/content.js` | Connects the pieces above. |
 | `scripts/build-words.js` | Builds `words.txt` (from the `word-list` package) and `tiers.txt` (from `wordlist-english`). |
+| `icons/icon.svg` | The extension's icon (add-ons list and toolbar). |
 | `helpers/bytes.js` | Small helpers shared by the tests. |
 | `test/` | One test file per source file. |
 

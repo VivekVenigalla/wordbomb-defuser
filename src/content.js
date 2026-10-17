@@ -7,11 +7,18 @@ console.log('[defuser] content script is running on', location.href);
 const state = createGameState();
 let wordList = []; // filled in once words.txt has been loaded (below)
 let tiers = new Map(); // how common each word is; filled in once tiers.txt has been loaded
+let enabled = true; // the toolbar button's on/off switch (see background.js)
 let hidden = false; // true while the box is hidden with Alt+B
 let minLength = SMALLEST_MIN_LENGTH; // set by the slider; the smallest value means "no limit"
 
+// The box is visible only when the extension is ON and the box was not hidden with Alt+B.
+function updateVisibility() {
+  setOverlayVisible(enabled && !hidden);
+}
+
 // Work out the suggestions for the current prompt and draw the box.
 function refresh() {
+  if (!enabled) return; // switched off: do no work (we still keep track of the game, see below)
   showOverlay(
     makeOverlayText({
       prompt: state.prompt,
@@ -29,11 +36,12 @@ function refresh() {
 document.addEventListener(
   'keydown',
   function (keyEvent) {
+    if (!enabled) return; // switched off: leave every key alone
     if (!isToggleShortcut(keyEvent)) return;
     keyEvent.preventDefault(); // stop Alt+B from typing a symbol somewhere
     hidden = !hidden;
     browser.storage.local.set({ hidden: hidden }).catch(() => {}); // remember it for next time
-    setOverlayVisible(!hidden);
+    updateVisibility();
   },
   true
 );
@@ -43,11 +51,12 @@ document.addEventListener(
 // small private notebook that belongs to the extension and survives reloads and restarts.)
 // If that fails, we just start from the defaults.
 browser.storage.local
-  .get(['minLength', 'hidden'])
+  .get(['minLength', 'hidden', 'enabled'])
   .catch(() => ({}))
   .then((saved) => {
     minLength = cleanMinLength(saved.minLength);
     hidden = saved.hidden === true; // anything other than a real "true" means: show the box
+    enabled = isEnabledValue(saved.enabled);
     initOverlay({
       minLength: minLength,
       onMinLengthChange: function (newValue) {
@@ -56,9 +65,19 @@ browser.storage.local
         refresh();
       },
     });
-    setOverlayVisible(!hidden);
+    updateVisibility();
     refresh();
   });
+
+// The toolbar button (background.js) saves a new on/off value. We are told when it changes.
+// While the extension is off we still keep track of the game, so switching it back on in the
+// middle of a round immediately shows the right prompt.
+browser.storage.onChanged.addListener(function (changes, area) {
+  if (area !== 'local' || !changes.enabled) return;
+  enabled = isEnabledValue(changes.enabled.newValue);
+  updateVisibility();
+  refresh();
+});
 
 // Load the two data files. `fetch` downloads a file; here the files are part of the extension itself.
 // Promise.all means "do both downloads, and continue when both are finished".

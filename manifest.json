@@ -36,9 +36,22 @@
         "src/decode.js",
         "src/parse-frame.js",
         "src/game-state.js",
+        "src/find-words.js",
+        "src/rank-words.js",
+        "src/overlay.js",
         "src/content.js"
       ],
       "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "words.txt"
+      ],
+      "matches": [
+        "https://wordbomb.io/*"
+      ]
     }
   ]
 }

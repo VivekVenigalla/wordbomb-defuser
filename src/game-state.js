@@ -13,6 +13,7 @@ function createGameState() {
     prompt: '', // the letters that must be in the word, in lowercase, e.g. 'thi'
     count: 0, // how many words the game says fit this prompt
     turnId: null, // the id of the player whose turn it is
+    neededLetters: '', // letters still needed for the alphabet bonus, e.g. 'bcdfg' (see applyEvent)
   };
 }
 
@@ -38,6 +39,22 @@ function applyEvent(state, event) {
     state.prompt = '';
     state.count = 0;
     state.turnId = null;
+    state.neededLetters = '';
+    return true;
+  }
+
+  if (event.name === 'user-letter-healths') {
+    // The game sends something like { A: 1, B: 1, C: 0, ... }: a number for each letter.
+    // ASSUMPTION (not yet confirmed in a real game): a letter with a number above 0 is a letter
+    // we still need for the alphabet bonus, and using it brings the number down to 0.
+    const data = event.data;
+    if (!data || typeof data !== 'object') return false;
+    let needed = '';
+    for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
+      const health = data[letter.toUpperCase()];
+      if (typeof health === 'number' && health > 0) needed += letter;
+    }
+    state.neededLetters = needed;
     return true;
   }
 

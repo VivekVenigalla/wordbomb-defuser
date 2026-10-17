@@ -101,3 +101,20 @@ test('cleanMinLength: out-of-range whole numbers are moved to the nearest allowe
   assert.equal(cleanMinLength(-5), SMALLEST_MIN_LENGTH);
   assert.equal(cleanMinLength(99), LARGEST_MIN_LENGTH);
 });
+
+test('the letters still needed are shown in capitals under the prompt', () => {
+  const text = makeOverlayText({ prompt: 'thi', count: 5, myTurn: true, words: ['thin'], neededLetters: 'qxz' });
+  const lines = text.split('\n');
+  assert.equal(lines[1], 'Prompt: THI (5 words)');
+  assert.equal(lines[2], 'Letters left: QXZ');
+});
+
+test('the letters line is also shown when it is not our turn', () => {
+  const text = makeOverlayText({ prompt: 'thi', count: 5, myTurn: false, words: [], neededLetters: 'qxz' });
+  assert.ok(text.includes('Letters left: QXZ'));
+});
+
+test('no letters line when none are known or none are left', () => {
+  assert.ok(!makeOverlayText({ prompt: 'thi', count: 5, myTurn: true, words: [], neededLetters: '' }).includes('Letters left'));
+  assert.ok(!makeOverlayText({ prompt: 'thi', count: 5, myTurn: true, words: [] }).includes('Letters left'));
+});

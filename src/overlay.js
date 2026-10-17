@@ -12,6 +12,7 @@
 //   myTurn      true, false, or null when we do not know
 //   words       the suggested words, best first
 //   minLength   the slider's value (optional)
+//   neededLetters   the letters still needed for the alphabet bonus, e.g. 'bcd' (optional)
 
 const SMALLEST_MIN_LENGTH = 2; // a prompt has at least 2 letters, so a shorter minimum means nothing
 const LARGEST_MIN_LENGTH = 15;
@@ -40,6 +41,10 @@ function makeOverlayText(info) {
   }
 
   lines.push('Prompt: ' + info.prompt.toUpperCase() + describeCount(info.count));
+
+  if (info.neededLetters) {
+    lines.push('Letters left: ' + info.neededLetters.toUpperCase()); // empty or missing: say nothing
+  }
 
   if (info.myTurn === false) {
     lines.push('Not your turn');

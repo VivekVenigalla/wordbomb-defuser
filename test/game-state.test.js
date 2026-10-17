@@ -14,7 +14,13 @@ function turnEvent(letter, count, who) {
 }
 
 test('a fresh state knows nothing', () => {
-  assert.deepEqual(createGameState(), { myId: null, prompt: '', count: 0, turnId: null });
+  assert.deepEqual(createGameState(), {
+    myId: null,
+    prompt: '',
+    count: 0,
+    turnId: null,
+    neededLetters: '',
+  });
 });
 
 test('each call to createGameState gives a separate object', () => {
@@ -118,4 +124,61 @@ test('getSessionId: returns null when there is no id or no valid address', () =>
   assert.equal(getSessionId('not an address'), null);
   assert.equal(getSessionId(''), null);
   assert.equal(getSessionId(undefined), null);
+});
+
+// A "user-letter-healths" event with the given numbers, e.g. letterEvent({ A: 1, B: 0 }).
+function letterEvent(numbers) {
+  return { name: 'user-letter-healths', data: numbers };
+}
+
+test('letter healths: letters with a number above 0 are the needed ones, in alphabetical order', () => {
+  const state = createGameState();
+  const changed = applyEvent(state, letterEvent({ Z: 1, A: 0, M: 2, B: 1, C: 0 }));
+  assert.equal(changed, true);
+  assert.equal(state.neededLetters, 'bmz');
+});
+
+test('letter healths: a full alphabet means every letter is needed', () => {
+  const all = {};
+  for (const letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') all[letter] = 1;
+  const state = createGameState();
+  applyEvent(state, letterEvent(all));
+  assert.equal(state.neededLetters, 'abcdefghijklmnopqrstuvwxyz');
+});
+
+test('letter healths: a newer event replaces the older one (letters get used up)', () => {
+  const state = createGameState();
+  applyEvent(state, letterEvent({ T: 1, H: 1, I: 1 }));
+  assert.equal(state.neededLetters, 'hit');
+  applyEvent(state, letterEvent({ T: 0, H: 1, I: 1 }));
+  assert.equal(state.neededLetters, 'hi');
+});
+
+test('letter healths: when every letter is used up, nothing is needed', () => {
+  const state = createGameState();
+  applyEvent(state, letterEvent({ A: 0, B: 0 }));
+  assert.equal(state.neededLetters, '');
+});
+
+test('letter healths: entries that are not numbers are ignored', () => {
+  const state = createGameState();
+  // "E" holds the text '1', not the number 1: we do not trust it
+  applyEvent(state, letterEvent({ A: 1, B: 'yes', C: null, D: 1, E: '1' }));
+  assert.equal(state.neededLetters, 'ad');
+});
+
+test('letter healths: missing or wrong data is ignored and changes nothing', () => {
+  const state = createGameState();
+  applyEvent(state, letterEvent({ A: 1 }));
+  assert.equal(applyEvent(state, { name: 'user-letter-healths', data: undefined }), false);
+  assert.equal(applyEvent(state, { name: 'user-letter-healths', data: null }), false);
+  assert.equal(applyEvent(state, { name: 'user-letter-healths', data: 'text' }), false);
+  assert.equal(state.neededLetters, 'a');
+});
+
+test('letter healths: a start event clears the needed letters', () => {
+  const state = createGameState();
+  applyEvent(state, letterEvent({ A: 1 }));
+  applyEvent(state, { name: 'start', data: undefined });
+  assert.equal(state.neededLetters, '');
 });

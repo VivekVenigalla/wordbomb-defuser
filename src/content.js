@@ -18,6 +18,7 @@ function refresh() {
       myTurn: isMyTurn(state),
       words: getSuggestions(wordList, state, minLength, tiers),
       minLength: minLength,
+      neededLetters: state.neededLetters,
     })
   );
 }
@@ -71,7 +72,13 @@ window.addEventListener('message', function (message) {
   const event = parseFrame(message.data.bytes);
   if (event === null) return; // not a game event we understand
 
-  if (applyEvent(state, event)) {
+  const changed = applyEvent(state, event); // update our memory first, then report on it
+
+  // While we are still learning what these two events mean, print them so they can be inspected.
+  if (event.name === 'user-letter-healths') console.log('[defuser] letters left:', state.neededLetters || '(none)', '| raw:', event.data);
+  if (event.name === 'alpha') console.log('[defuser] alpha event:', event.data);
+
+  if (changed) {
     console.log(
       '[defuser] prompt:', state.prompt,
       '| words the game counts:', state.count,
